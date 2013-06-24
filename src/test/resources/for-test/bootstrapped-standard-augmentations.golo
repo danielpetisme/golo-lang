@@ -90,3 +90,19 @@ function maps_each = {
 }
 
 # ............................................................................................... #
+
+function str_format1 = -> "%s": format("plop")
+function str_format2 = -> "%s %s": format("plop", "da plop")
+
+# ............................................................................................... #
+
+function number_repeaters = {
+  let builder = java.lang.StringBuilder()
+  2: times(-> builder: append("."))
+  3: times(|i| -> builder: append(i))
+  10: upTo(12, |i| -> builder: append(i))
+  12: downTo(10, |i| -> builder: append(i))
+  return builder: toString()
+}
+
+# ............................................................................................... #

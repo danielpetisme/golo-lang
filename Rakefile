@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION='0-preview3-SNAPSHOT'
-DIST_BIN_PATH = "target/gololang-#{VERSION}-distribution/gololang-#{VERSION}/bin"
-
 task :default => [:all]
 
 desc "Build a complete distribution (packages + documentation)"
@@ -45,6 +42,15 @@ task :doc do
   end
 end
 
+desc "Deploy snapshots"
+task :deploy => [:clean, :build] do
+  MAGIC = "mvn deploy"
+  sh MAGIC
+  Dir.chdir("golo-maven-plugin") do
+    sh MAGIC
+  end
+end
+
 desc "Release"
 task :release => [:clean, :all] do
   MAGIC = "mvn deploy -P sonatype-oss-release"
@@ -52,25 +58,6 @@ task :release => [:clean, :all] do
   Dir.chdir("golo-maven-plugin") do
     sh MAGIC
   end
-end
-
-namespace :run do
-
-  desc "Run golo"
-  task :golo, :arguments do |t, args|
-    sh "#{DIST_BIN_PATH}/golo #{args.arguments}"
-  end
-
-  desc "Run goloc"
-  task :goloc, :arguments do |t, args|
-    sh "#{DIST_BIN_PATH}/goloc #{args.arguments}"
-  end
-
-  desc "Run gologolo"
-  task :gologolo, :arguments do |t, args|
-    sh "#{DIST_BIN_PATH}/gologolo #{args.arguments}"
-  end
-
 end
 
 namespace :test do
@@ -121,6 +108,30 @@ namespace :special do
       sh "mvn clean install"
     end
     sh "mvn clean install"
+  end
+
+  desc "Check for Maven dependency updates"
+  task :check_dependency_updates do
+    CMD = "mvn versions:display-dependency-updates"
+    sh CMD
+    Dir.chdir("golo-maven-plugin") do
+      sh CMD
+    end
+    Dir.chdir("benchmarks") do
+      sh CMD
+    end
+  end
+
+  desc "Check for Maven plugin updates"
+  task :check_plugin_updates do
+    CMD = "mvn versions:display-plugin-updates"
+    sh CMD
+    Dir.chdir("golo-maven-plugin") do
+      sh CMD
+    end
+    Dir.chdir("benchmarks") do
+      sh CMD
+    end
   end
 
 end

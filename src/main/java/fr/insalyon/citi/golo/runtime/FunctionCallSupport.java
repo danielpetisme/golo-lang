@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import static fr.insalyon.citi.golo.runtime.TypeMatching.*;
 import static java.lang.invoke.MethodHandles.Lookup;
 import static java.lang.invoke.MethodType.methodType;
+import static java.lang.reflect.Modifier.isPrivate;
 import static java.lang.reflect.Modifier.isStatic;
 
 public final class FunctionCallSupport {
@@ -89,17 +90,27 @@ public final class FunctionCallSupport {
     }
     if (result instanceof Method) {
       Method method = (Method) result;
+      checkLocalFunctionCallFromSameModuleAugmentation(method, callerClass.getName());
       handle = caller.unreflect(method).asType(type);
     } else if (result instanceof Constructor) {
       Constructor constructor = (Constructor) result;
       handle = caller.unreflectConstructor(constructor).asType(type);
-    } else if (result instanceof Field) {
+    } else {
       Field field = (Field) result;
       handle = caller.unreflectGetter(field).asType(type);
     }
 
     callSite.setTarget(handle);
     return handle.invokeWithArguments(args);
+  }
+
+  private static void checkLocalFunctionCallFromSameModuleAugmentation(Method method, String callerClassName) {
+    if (isPrivate(method.getModifiers()) && callerClassName.contains("$")) {
+      String prefix = callerClassName.substring(0, callerClassName.indexOf("$"));
+      if (method.getDeclaringClass().getName().equals(prefix)) {
+        method.setAccessible(true);
+      }
+    }
   }
 
   private static Object findClassWithConstructorFromImports(Class<?> callerClass, String classname, Object[] args) {

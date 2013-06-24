@@ -18,6 +18,61 @@
 
 module gololang.StandardAugmentations
 
+
+local function _newWithSameType = |this| {
+  try {
+    return this: getClass(): newInstance()
+  } catch (e) {
+    if not(e oftype java.lang.InstantiationException.class) {
+      throw e
+    }
+    let fallback = match {
+      when this oftype java.util.RandomAccess.class then java.util.ArrayList()
+      when this oftype java.util.List.class then java.util.LinkedList()
+      when this oftype java.util.Set.class then java.util.HashSet()
+      when this oftype java.util.Map.class then java.util.HashMap()
+      otherwise null
+    }
+    if fallback is null {
+      raise("Cannot create a new collection from " + this: getClass())
+    }
+    return fallback
+  }
+}
+
+local function _closureWithIndexArgument = |target| -> match {
+  when target: type(): parameterCount() == 0
+    then java.lang.invoke.MethodHandles.dropArguments(target, 0, java.lang.Object.class)
+  otherwise
+    target
+}
+
+# ............................................................................................... #
+
+augment java.lang.Number {
+
+  function times = |count, func| {
+    let target = _closureWithIndexArgument(func)
+    for (var i = 0, i < count, i = i + 1) {
+      target(i)
+    }
+  }
+
+  function upTo = |low, high, func| {
+    let target = _closureWithIndexArgument(func)
+    for (var i = low, i <= high, i = i + 1) {
+      target(i)
+    }
+  }
+
+  function downTo = |high, low, func| {
+    let target = _closureWithIndexArgument(func)
+    for (var i = high, i >= low, i = i - 1) {
+      target(i)
+    }
+  }
+}
+
 # ............................................................................................... #
 
 augment java.lang.invoke.MethodHandle {
@@ -33,28 +88,20 @@ augment java.lang.invoke.MethodHandle {
 
 # ............................................................................................... #
 
-augment java.util.Collection {
+augment java.lang.String {
 
-  function newWithSameType = |this| {
-    try {
-      return this: getClass(): newInstance()
-    } catch (e) {
-      if not(e oftype java.lang.InstantiationException.class) {
-        throw e
-      }
-      let fallback = match {
-        when this oftype java.util.RandomAccess.class then java.util.ArrayList()
-        when this oftype java.util.List.class then java.util.LinkedList()
-        when this oftype java.util.Set.class then java.util.HashSet()
-        when this oftype java.util.Map.class then java.util.HashMap()
-        otherwise null
-      }
-      if fallback is null {
-        raise("Cannot create a new collection from " + this: getClass())
-      }
-      return fallback
+  function format = |this, args...| {
+    if args: length() == 1 {
+      return java.lang.String.format(this, args: get(0))
+    } else {
+      return java.lang.String.format(this, args)
     }
   }
+}
+
+# ............................................................................................... #
+
+augment java.lang.Iterable {
 
   function reduce = |this, initialValue, func| {
     var acc = initialValue
@@ -63,6 +110,22 @@ augment java.util.Collection {
     }
     return acc
   }
+  
+  function each = |this, func| {
+    foreach (element in this) {
+      func(element)
+    }
+    return this
+  }
+
+}
+
+# ............................................................................................... #
+
+augment java.util.Collection {
+
+  function newWithSameType = |this| -> _newWithSameType(this)
+
 }
 
 # ............................................................................................... #
@@ -119,12 +182,6 @@ augment java.util.List {
       mapped: append(func(element))
     }
     return mapped
-  }
-
-  function each = |this, func| {
-    foreach (element in this) {
-      func(element)
-    }
   }
 
   function join = |this, separator| {
@@ -205,12 +262,6 @@ augment java.util.Set {
     }
     return mapped
   }
-
-  function each = |this, func| {
-    foreach (element in this) {
-      func(element)
-    }
-  }
 }
 
 # ............................................................................................... #
@@ -252,7 +303,7 @@ augment java.util.Map {
 
   function unmodifiableView = |this| -> java.util.Collections.unmodifiableMap(this)
 
-  function newWithSameType = |this| -> this: getClass(): newInstance()
+  function newWithSameType = |this| -> _newWithSameType(this)
 
   function filter = |this, pred| {
     let filtered = this: newWithSameType()
@@ -291,6 +342,7 @@ augment java.util.Map {
     foreach (entry in this: entrySet()) {
       func(entry: getKey(), entry: getValue())
     }
+    return this
   }
 }
 

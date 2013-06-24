@@ -346,6 +346,7 @@ class ParseTreeToGoloIrVisitor implements GoloParserVisitor {
     AssignmentStatement assignmentStatement = new AssignmentStatement(
         localReference,
         (ExpressionStatement) context.objectStack.pop());
+    assignmentStatement.setDeclaring(true);
     context.objectStack.push(assignmentStatement);
     node.setIrElement(assignmentStatement);
     return data;
@@ -357,7 +358,7 @@ class ParseTreeToGoloIrVisitor implements GoloParserVisitor {
     LocalReference reference = context.referenceTableStack.peek().get(node.getName());
     if (reference == null) {
       getOrCreateExceptionBuilder(context).report(UNDECLARED_REFERENCE, node,
-          "Assigning to an undeclared reference `" + node.getName() +
+          "Assigning to either a parameter or an undeclared reference `" + node.getName() +
               "` at (line=" + node.getLineInSourceCode() +
               ", column=" + node.getColumnInSourceCode() + ")");
     }
@@ -614,6 +615,7 @@ class ParseTreeToGoloIrVisitor implements GoloParserVisitor {
                 OperatorType.METHOD_CALL,
                 iterableExpressionStatement,
                 new MethodInvocation("iterator")));
+    init.setDeclaring(true);
 
     ExpressionStatement condition =
         new BinaryOperation(
@@ -621,13 +623,14 @@ class ParseTreeToGoloIrVisitor implements GoloParserVisitor {
             new ReferenceLookup(iteratorId),
             new MethodInvocation("hasNext"));
 
-    block.prependStatement(
-        new AssignmentStatement(
-            elementReference,
-            new BinaryOperation(
-                OperatorType.METHOD_CALL,
-                new ReferenceLookup(iteratorId),
-                new MethodInvocation("next"))));
+    AssignmentStatement next = new AssignmentStatement(
+        elementReference,
+        new BinaryOperation(
+            OperatorType.METHOD_CALL,
+            new ReferenceLookup(iteratorId),
+            new MethodInvocation("next")));
+    next.setDeclaring(true);
+    block.prependStatement(next);
 
     LoopStatement loopStatement = new LoopStatement(init, condition, block, null);
     Block localBlock = new Block(localTable);

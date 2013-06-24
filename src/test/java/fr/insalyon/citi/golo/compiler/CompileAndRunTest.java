@@ -98,6 +98,15 @@ public class CompileAndRunTest {
     String expected = "\nFoo\r\n";
     assertThat(str.length(), is(expected.length()));
     assertThat(str, is(expected));
+
+    Method multiline = moduleClass.getMethod("multiline");
+    assertThat((String) multiline.invoke(null), is("This is\n*awesome*"));
+
+    Method nasty_multiline = moduleClass.getMethod("nasty_multiline");
+    assertThat((String) nasty_multiline.invoke(null), is("Damn!=\\\"\"\"="));
+
+    Method raw_code = moduleClass.getMethod("raw_code");
+    assertThat((String) raw_code.invoke(null), is("println(\"Hello!\\n\")"));
   }
 
   @Test
@@ -250,7 +259,22 @@ public class CompileAndRunTest {
   }
 
   @Test
-  public void test_operators() throws ClassNotFoundException, IOException, ParseException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+  public void test_booleans() throws Throwable {
+    Class<?> moduleClass = compileAndLoadGoloModule(SRC, "booleans.golo");
+
+    moduleClass.getMethod("and_logic").invoke(null);
+
+    moduleClass.getMethod("or_logic").invoke(null);
+
+    Method and_shortcut = moduleClass.getMethod("and_shortcut");
+    assertThat((String) and_shortcut.invoke(null), is("Ok"));
+
+    Method or_shortcut = moduleClass.getMethod("or_shortcut");
+    assertThat((String) or_shortcut.invoke(null), is("Ok"));
+  }
+
+  @Test
+  public void test_operators() throws Throwable {
     Class<?> moduleClass = compileAndLoadGoloModule(SRC, "operators.golo");
 
     Method plus_one = moduleClass.getMethod("plus_one", Object.class);
@@ -430,6 +454,9 @@ public class CompileAndRunTest {
 
     Method length_method = moduleClass.getMethod("length_method");
     assertThat((Integer) length_method.invoke(null), is(3));
+
+    Method size_method = moduleClass.getMethod("size_method");
+    assertThat((Integer) size_method.invoke(null), is(3));
 
     Method iterator_method = moduleClass.getMethod("iterator_method");
     assertThat((Integer) iterator_method.invoke(null), is(6));
@@ -642,6 +669,15 @@ public class CompileAndRunTest {
 
     Method closure_with_varargs_and_capture = moduleClass.getMethod("closure_with_varargs_and_capture");
     assertThat((String) closure_with_varargs_and_capture.invoke(null), is("> 6"));
+
+    Method closure_with_synthetic_refs = moduleClass.getMethod("closure_with_synthetic_refs");
+    assertThat((String) closure_with_synthetic_refs.invoke(null), is("012"));
+
+    Method closure_with_synthetic_refs_in_match = moduleClass.getMethod("closure_with_synthetic_refs_in_match");
+    assertThat((String) closure_with_synthetic_refs_in_match.invoke(null), is("120"));
+
+    Method scoping_check = moduleClass.getMethod("scoping_check");
+    assertThat((Integer) scoping_check.invoke(null), is(120));
   }
 
   @Test
@@ -678,6 +714,9 @@ public class CompileAndRunTest {
 
     Method closure_in_augmentation = moduleClass.getMethod("closure_in_augmentation");
     assertThat((String) closure_in_augmentation.invoke(null), is("foo"));
+
+    Method bang_plop = moduleClass.getMethod("bang_plop");
+    assertThat((String) bang_plop.invoke(null), is("Plop!"));
   }
 
   @Test
@@ -748,5 +787,16 @@ public class CompileAndRunTest {
       Problem problem = e.getProblems().get(0);
       assertThat(problem.getType(), is(BREAK_OR_CONTINUE_OUTSIDE_LOOP));
     }
+  }
+
+  @Test
+  public void dynamic_evaluation() throws Throwable {
+    Class<?> moduleClass = compileAndLoadGoloModule(SRC, "dynamic-evaluation.golo");
+
+    Method maxer = moduleClass.getMethod("maxer");
+    assertThat((Integer) maxer.invoke(null), is(10));
+
+    Method run_plop = moduleClass.getMethod("run_plop");
+    assertThat((Integer) run_plop.invoke(null), is(3));
   }
 }
