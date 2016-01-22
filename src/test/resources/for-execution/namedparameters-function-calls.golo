@@ -39,3 +39,5 @@ function call_with_expressions = ->
     title = foo(),
     author = bar() orIfNull "Unknown"
   )
+
+function java_method_with_named_args = -> range(to = 'd', from = 'a')

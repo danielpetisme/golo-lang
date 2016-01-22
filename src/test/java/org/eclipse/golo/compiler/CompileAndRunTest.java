@@ -37,6 +37,7 @@ import static java.lang.reflect.Modifier.*;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class CompileAndRunTest {
@@ -1882,6 +1883,10 @@ public class CompileAndRunTest {
     Method call_with_expressions = moduleClass.getMethod("call_with_expressions");
     result = (String) call_with_expressions.invoke(null);
     assertThat(result, is("Unknown Foo >>> Plop!"));
+
+    Method call_java_method_with_named_args = moduleClass.getMethod("java_method_with_named_args");
+    Range range = (Range) call_java_method_with_named_args.invoke(null);
+    assertTrue(range.encloses('b'));
   }
 
   @Test
